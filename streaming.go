@@ -541,8 +541,37 @@ func (r *rsStream) Join(dst io.Writer, shards []io.Reader, outSize int64) error 
 			return StreamReadError{Err: ErrShardNoData, Stream: i}
 		}
 	}
+
+	//src  流的最后几位
+	partSize := outSize / int64(len(shards))
+	lastPartData := make([]byte, 0, partSize)
+
+	readN, err := shards[len(shards)-1].Read(lastPartData)
+
+	if int64(readN) != partSize {
+		return StreamReadError{Err: ErrShardNoData, Stream: len(shards)}
+	}
+
+	fillValue1 := int8(lastPartData[partSize-1])
+	fillValue2 := int8(lastPartData[partSize-2])
+	fillValue3 := int8(lastPartData[partSize-3])
+
+	//填充长度
+	fillLen := 0
+	if fillValue1 == 1 {
+		fillLen = 1
+	} else if fillValue1 == 2 && fillValue2 == fillValue1 {
+		fillLen = 2
+	} else if fillValue3 == fillValue2 && fillValue2 == fillValue1 {
+		fillLen = int(fillValue1)
+	}
+
+	lastReader := bytes.NewReader(lastPartData[0 : readN-fillLen])
+
 	// Join all shards
-	src := io.MultiReader(shards...)
+	src := io.MultiReader(shards[0 : len(shards)-1]...)
+	src = io.MultiReader(src, lastReader)
+
 
 	// Copy data to dst
 	n, err := io.CopyN(dst, src, outSize)
@@ -581,12 +610,22 @@ func (r *rsStream) Split(data io.Reader, dst []io.Writer, size int64) error {
 		}
 	}
 
+
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(r.r.DataShards) - 1) / int64(r.r.DataShards)
 
 	// Pad data to r.Shards*perShard.
-	padding := make([]byte, (int64(r.r.Shards)*perShard)-size)
+	fillLength := (int64(r.r.Shards) * perShard) - size
+	fillValue := int(fillLength)
+	padding := make([]byte, fillLength)
+	//填充
+	for idx := 0; idx < fillValue; idx++ {
+		padding[idx] = byte(fillValue)
+	}
+
 	data = io.MultiReader(data, bytes.NewBuffer(padding))
+
+
 
 	// Split into equal-length shards and copy.
 	for i := range dst {
