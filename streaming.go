@@ -624,7 +624,7 @@ func (r *rsStream) Split(data io.Reader, dst []io.Writer, size int64) error {
 	fillValue := int((int64(r.r.DataShards) * perShard) - size)
 	padding := make([]byte, fillLength)
 	//填充
-	for idx := 0; idx < fillValue; idx++ {
+	for idx := 0; idx < int(fillLength); idx++ {
 		padding[idx] = byte(fillValue)
 	}
 
