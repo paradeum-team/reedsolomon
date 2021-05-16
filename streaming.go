@@ -579,7 +579,7 @@ func (r *rsStream) Join(dst io.Writer, shards []io.Reader, outSize int64) error 
 
 
 	// Copy data to dst
-	n, err := io.CopyN(dst, src, outSize-int64(fillValue3))
+	n, err := io.CopyN(dst, src, outSize-int64(fillLen))
 	if err == io.EOF {
 		return ErrShortData
 	}
