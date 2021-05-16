@@ -575,18 +575,17 @@ func (r *rsStream) Join(dst io.Writer, shards []io.Reader, outSize int64) error 
 	src = io.MultiReader(src, lastReader)
 
 
-
-
+	contentLen:=outSize-int64(fillLen)
 
 	// Copy data to dst
-	n, err := io.CopyN(dst, src, outSize-int64(fillLen))
+	n, err := io.CopyN(dst, src, contentLen)
 	if err == io.EOF {
 		return ErrShortData
 	}
 	if err != nil {
 		return err
 	}
-	if n != outSize {
+	if n != contentLen {
 		return ErrShortData
 	}
 	return nil
