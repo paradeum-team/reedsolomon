@@ -572,6 +572,7 @@ func (r *rsStream) Join(dst io.Writer, shards []io.Reader, outSize int64) error 
 	src := io.MultiReader(shards[0 : len(shards)-1]...)
 	src = io.MultiReader(src, lastReader)
 
+
 	// Copy data to dst
 	n, err := io.CopyN(dst, src, outSize)
 	if err == io.EOF {
@@ -609,6 +610,7 @@ func (r *rsStream) Split(data io.Reader, dst []io.Writer, size int64) error {
 		}
 	}
 
+
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(r.r.DataShards) - 1) / int64(r.r.DataShards)
 
@@ -622,6 +624,8 @@ func (r *rsStream) Split(data io.Reader, dst []io.Writer, size int64) error {
 	}
 
 	data = io.MultiReader(data, bytes.NewBuffer(padding))
+
+
 
 	// Split into equal-length shards and copy.
 	for i := range dst {
